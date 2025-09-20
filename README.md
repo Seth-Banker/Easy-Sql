@@ -1,1 +1,1 @@
-# EasySql
+# Easy-Redis
