@@ -25,7 +25,17 @@ namespace EasySQL {
 				else return false;
 			}
 			else if (args[0] == "CREATE" && args[1] == "TABLE") {
-
+				args.erase(args.begin(), args.begin()+2);
+				if (c_create(args)) {
+					return true;
+				}
+				else return false;
+			}
+			else if (args[0] == "debug") {
+				if (c_debug()) {
+					return true;
+				}
+				else return false;
 			}
 
 		}
@@ -36,8 +46,10 @@ namespace EasySQL {
 
 	// mmm pasta!
 	// filter command if its even valid.
-	// <command> <subcommand> <args>
+	// <command>
 	// <command> <args>
+	// <command> <subcommand>
+	// <command> <subcommand> <args>
 	bool cmd(vector<string>& tokens) {
 		try {
 			for (int i = 0; i < commands.size(); i++) {

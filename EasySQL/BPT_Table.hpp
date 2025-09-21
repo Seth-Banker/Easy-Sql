@@ -55,8 +55,12 @@ namespace EasySQL {
     class BplusTree {
     public:
         Node* root;
-        BplusTree(int order) {
-            root = new Node(order);
+        string name;
+        BplusTree(string name_, int degree) : name(move(name_)) {
+
+			//name = name_;
+
+            root = new Node(degree);
             root->check_leaf = true;
         }
 
@@ -163,24 +167,4 @@ namespace EasySQL {
             }
         }
     };
-
-    /*
-    int main() {
-        int record_len = 3;
-        BplusTree bplustree(record_len);
-        bplustree.insert("5", "33");
-        bplustree.insert("15", "21");
-        bplustree.insert("25", "31");
-        bplustree.insert("35", "41");
-        bplustree.insert("45", "10");
-        bplustree.printTree(bplustree.root);
-        if (bplustree.find("5", "34")) {
-            cout << "Found" << endl;
-        }
-        else {
-            cout << "Not found" << endl;
-        }
-        return 0;
-    }
-    */
 }
