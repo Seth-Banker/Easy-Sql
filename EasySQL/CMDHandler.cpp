@@ -31,6 +31,13 @@ namespace EasySQL {
 				}
 				else return false;
 			}
+			else if (args[0] == "INSERT" && args[1] == "TABLE") {
+				args.erase(args.begin(), args.begin() + 2);
+				if (c_insert(args)) {
+					return true;
+				}
+				else return false;
+			}
 			else if (args[0] == "debug") {
 				if (c_debug()) {
 					return true;

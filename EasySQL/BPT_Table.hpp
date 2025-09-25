@@ -7,11 +7,25 @@
 using namespace std;
 
 namespace EasySQL {
+
+    enum NType {
+        INT, // int64_t
+		DBL, // double
+		STR, // string
+		BOOL, // boolean
+		NA // Not Available, Unknown type, Error
+    };
+
+    extern NType strToNType(const string& typeStr);
+	extern string nTypeToStr(const NType& type);
+    extern bool isValidType(const string& str, const NType& type);
+	extern NType whatType(const string& str);
+
     // node creation
     class Node {
     public:
         int order;
-        vector<string> values;
+        vector<vector<string>> values;
         vector<Node*> children; // for internal nodes
         vector<vector<string>> keys; // for leaf nodes
         Node* nextKey;
@@ -24,28 +38,28 @@ namespace EasySQL {
             this->check_leaf = false;
         }
 
-        // insert at the leaf
+        // Fix for insert_at_leaf: use vector<string>{value} instead of value
         void insert_at_leaf(Node* leaf, string value, string key) {
             if (!values.empty()) {
                 for (int i = 0; i < values.size(); i++) {
-                    if (value == values[i]) {
+                    if (value == values[i][0]) {
                         keys[i].push_back(key);
                         break;
                     }
-                    else if (value < values[i]) {
-                        values.insert(values.begin() + i, value);
+                    else if (value < values[i][0]) {
+                        values.insert(values.begin() + i, vector<string>{value});
                         keys.insert(keys.begin() + i, vector<string>{key});
                         break;
                     }
                     else if (i + 1 == values.size()) {
-                        values.push_back(value);
+                        values.push_back(vector<string>{value});
                         keys.push_back(vector<string>{key});
                         break;
                     }
                 }
             }
             else {
-                values.push_back(value);
+                values.push_back(vector<string>{value});
                 keys.push_back(vector<string>{key});
             }
         }
@@ -54,20 +68,25 @@ namespace EasySQL {
     // B+ tree
     class BplusTree {
     public:
+
         Node* root;
+        vector<NType> types;
+        int degree;
         string name;
-        BplusTree(string name_, int degree) : name(move(name_)) {
 
-			//name = name_;
-
+        BplusTree(string name_ = "default", int degree_ = 5, vector<NType> types_ = { STR, STR}) {
             root = new Node(degree);
             root->check_leaf = true;
+
+			degree = degree_;
+            types = types_;
+			name = name_;
         }
 
         // insert operation
-        void insert(string value, string key) {
-            Node* old_node = search(value);
-            old_node->insert_at_leaf(old_node, value, key);
+        void insert(vector<string> value, string key) {
+            Node* old_node = search(value[0]);
+            old_node->insert_at_leaf(old_node, value[0], key);
             if (old_node->values.size() == old_node->order) {
                 Node* node1 = new Node(old_node->order);
                 node1->check_leaf = true;
@@ -79,7 +98,7 @@ namespace EasySQL {
                 old_node->values.resize(mid + 1);
                 old_node->keys.resize(mid + 1);
                 old_node->nextKey = node1;
-                insert_in_parent(old_node, node1->values[0], node1);
+                insert_in_parent(old_node, node1->values[0][0], node1);
             }
         }
 
@@ -88,11 +107,11 @@ namespace EasySQL {
             Node* current_node = root;
             while (!current_node->check_leaf) {
                 for (int i = 0; i < current_node->values.size(); i++) {
-                    if (value == current_node->values[i]) {
+                    if (value == current_node->values[i][0]) {
                         current_node = current_node->children[i + 1];
                         break;
                     }
-                    else if (value < current_node->values[i]) {
+                    else if (value < current_node->values[i][0]) {
                         current_node = current_node->children[i];
                         break;
                     }
@@ -109,7 +128,7 @@ namespace EasySQL {
         bool find(string value, string key) {
             Node* l = search(value);
             for (int i = 0; i < l->values.size(); i++) {
-                if (l->values[i] == value) {
+                if (!l->values[i].empty() && l->values[i][0] == value) {
                     for (int j = 0; j < l->keys[i].size(); j++) {
                         if (l->keys[i][j] == key) {
                             return true;
@@ -124,7 +143,7 @@ namespace EasySQL {
         void insert_in_parent(Node* n, string value, Node* ndash) {
             if (root == n) {
                 Node* rootNode = new Node(n->order);
-                rootNode->values.push_back(value);
+                rootNode->values.push_back(vector<string>{value});
                 rootNode->children.push_back(n);
                 rootNode->children.push_back(ndash);
                 root = rootNode;
@@ -135,15 +154,17 @@ namespace EasySQL {
             Node* parentNode = n->parent;
             for (int i = 0; i < parentNode->children.size(); i++) {
                 if (parentNode->children[i] == n) {
-                    parentNode->values.insert(parentNode->values.begin() + i, value);
+                    parentNode->values.insert(parentNode->values.begin() + i, vector<string>{value});
+                    int mid = ceil(parentNode->order / 2.0) - 1;
+                    parentNode->values.insert(parentNode->values.begin() + i, vector<string>{value});
+                    string value_ = parentNode->values[mid][0];
                     parentNode->children.insert(parentNode->children.begin() + i + 1, ndash);
                     if (parentNode->children.size() > parentNode->order) {
                         Node* parentdash = new Node(parentNode->order);
                         parentdash->parent = parentNode->parent;
-                        int mid = ceil(parentNode->order / 2.0) - 1;
                         parentdash->values.assign(parentNode->values.begin() + mid + 1, parentNode->values.end());
                         parentdash->children.assign(parentNode->children.begin() + mid + 1, parentNode->children.end());
-                        string value_ = parentNode->values[mid];
+                        string value_ = parentNode->values[mid][0];
                         parentNode->values.resize(mid);
                         parentNode->children.resize(mid + 1);
                         insert_in_parent(parentNode, value_, parentdash);
@@ -157,7 +178,7 @@ namespace EasySQL {
         void printTree(Node* node) {
             if (node == nullptr) return;
             for (int i = 0; i < node->values.size(); i++) {
-                cout << node->values[i] << " ";
+                cout << node->values[i][0] << " ";
             }
             cout << endl;
             if (!node->check_leaf) {

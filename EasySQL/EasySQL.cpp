@@ -11,7 +11,12 @@ using namespace std;
 
 namespace EasySQL {
 
+    /*
+	Commands created in main(), invoked in cmdExe(), defined in Commands.hpp
+    */
     vector<Command> commands = {};
+
+	// this will be changed later but this is how all tables are stored for now.
     vector<BplusTree> trees = {};
 
     vector<string> tokenize(const string& input, char delimiter = ' ') {
