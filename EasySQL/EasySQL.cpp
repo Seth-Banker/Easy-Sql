@@ -47,7 +47,7 @@ int main()
     commands.push_back(Command("CREATE", { "TABLE" }, true, "Create containers (e.g. Database, Table)"));
     commands.push_back(Command("INSERT", { "TABLE" }, true, "Insert elements into containers (e.g. Database, Table)"));
 	commands.push_back(Command("DELETE", { "TABLE" }, true, "Delete elements from containers (e.g. Database, Table)"));
-    commands.push_back(Command("FIND", {}, false, "Find a value from a table."));
+    commands.push_back(Command("GET", { "TABLE" }, true, "Get a value from a table."));
     
 
     while (true) {

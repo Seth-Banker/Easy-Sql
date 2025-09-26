@@ -152,24 +152,6 @@ namespace EasySQL {
 		}
     }
 
-	// Look for key -> value 1 -> value 2 -> etc
-	bool c_find(vector<string> args) {
-		try {
-			for (int i = 0; i < trees.size(); i++) {
-				if (trees[i].name == args[0]) {
-					//if(args.size <)
-				}
-			}
-
-			// last escape
-			sendMessage("Table '" + args[0] + "' does not exist.");
-			return true;
-		}
-		catch (...) {
-			return false;
-		}
-	}
-
 	bool c_delete(vector<string> args) {
 		try {
 			for (int i = 0; i < trees.size(); i++) {
@@ -202,6 +184,28 @@ namespace EasySQL {
 		}
 	}
 
+	// gets value by key
+	bool c_get(vector<string> args) {
+		try {
+			for (int i = 0; i < trees.size(); i++) {
+				if (trees[i].name == args[0]) {
+					vector<string> row = trees[i].searchByKey(args[1]);
+
+					string result = "Row : ";
+					for (int i = 0; i < row.size(); i++) {
+						result += row[i] + " ";
+					}
+
+					sendMessage(result);
+				}
+			}
+		}
+		catch (...) {
+			return false;
+		}
+	}
+
+	/*
 	bool c_debug() {
 		try {
 			string result = "List of trees :";
@@ -225,4 +229,5 @@ namespace EasySQL {
 			return false;
 		}
 	}
+	*/
 }

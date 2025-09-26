@@ -8,6 +8,7 @@ using namespace std;
 
 namespace EasySQL {
 
+    // types default to strings. NA is usually used for errors.
     enum NType {
         INT, // int64_t
 		DBL, // double
@@ -316,6 +317,34 @@ namespace EasySQL {
             return current_node;
         }
 
+        vector<string> searchByKey(string value) {
+            Node* current_node = root;
+            while (!current_node->check_leaf) {
+                for (int i = 0; i < current_node->values.size(); i++) {
+                    if (value == current_node->values[i][0]) {
+                        current_node = current_node->children[i + 1];
+                        break;
+                    }
+                    else if (value < current_node->values[i][0]) {
+                        current_node = current_node->children[i];
+                        break;
+                    }
+                    else if (i + 1 == current_node->values.size()) {
+                        current_node = current_node->children[i + 1];
+                        break;
+                    }
+                }
+            }
+
+            for (int i = 0; i < current_node->values.size(); i++) {
+                if (current_node->values[i][0] == value) {
+                    return current_node->values[i];
+                }
+            }
+
+            return {};
+        }
+
         // find the node
         bool find(vector<string> value) {
 
@@ -365,22 +394,6 @@ namespace EasySQL {
                         insert_in_parent(parentNode, value_, parentdash);
                     }
                     break;
-                }
-            }
-        }
-
-        // display the tree
-        void printTree(Node* node) {
-            if (node == nullptr) return;
-            for (int i = 0; i < node->values.size(); i++) {
-                for (int a = 0; a < node->values[i].size(); a++) {
-                    sendMessage(node->values[i][a]);
-                }
-            }
-            cout << endl;
-            if (!node->check_leaf) {
-                for (int i = 0; i <= node->values.size(); i++) {
-                    printTree(node->children[i]);
                 }
             }
         }
