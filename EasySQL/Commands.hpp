@@ -159,7 +159,6 @@ namespace EasySQL {
 					string title = args[0];
 					vector<string> newArgs = args; // erase table name from args
 
-
 					newArgs.erase(newArgs.begin());
 
 					string result = "";
@@ -171,7 +170,6 @@ namespace EasySQL {
 						sendMessage("Deleted ' " + result + "' from '" + title + "'.");
 						return true;
 					}
-
 
 					sendMessage("Could not find row ' " + result + "'.");
 					return true;
@@ -188,15 +186,25 @@ namespace EasySQL {
 	bool c_get(vector<string> args) {
 		try {
 			for (int i = 0; i < trees.size(); i++) {
+
 				if (trees[i].name == args[0]) {
+
 					vector<string> row = trees[i].searchByKey(args[1]);
 
-					string result = "Row : ";
-					for (int i = 0; i < row.size(); i++) {
-						result += row[i] + " ";
-					}
+					if (!row.empty()) {
 
-					sendMessage(result);
+						string result = "Row : ";
+						for (int i = 0; i < row.size(); i++) {
+							result += row[i] + " ";
+						}
+
+						sendMessage(result);
+						return true;
+					}
+					else {
+						sendMessage("Could not find key '" + args[1] + "' in table '" + args[0] + "'.");
+						return true;
+					}
 				}
 			}
 		}
