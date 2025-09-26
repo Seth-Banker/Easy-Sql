@@ -15,6 +15,7 @@ namespace EasySQL {
 		return true;
 	}
 
+	// attach functionality to commands.
 	bool cmdExe(vector<string> args = {}) {
 		try {
 
@@ -44,7 +45,17 @@ namespace EasySQL {
 				}
 				else return false;
 			}
+			else if (args[0] == "DELETE" && args[1] == "TABLE") {
+				args.erase(args.begin(), args.begin() + 2);
+				if (c_delete(args)) {
+					return true;
+				}
+				else return false;
+			}
+			
 
+			// if function escapes to here then we never found a matching command.
+			return false;
 		}
 		catch (...) {
 			return false;

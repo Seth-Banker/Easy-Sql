@@ -25,6 +25,8 @@ namespace EasySQL {
     class Node {
     public:
         int order;
+
+        // each value index is a row of data.
         vector<vector<string>> values;
         vector<Node*> children; // for internal nodes
         vector<vector<string>> keys; // for leaf nodes
@@ -39,14 +41,14 @@ namespace EasySQL {
         }
 
         // Fix for insert_at_leaf: use vector<string>{value} instead of value
-        void insert_at_leaf(Node* leaf, string value, string key) {
+        void insert_at_leaf(Node* leaf, vector<string> value, string key) {
             if (!values.empty()) {
                 for (int i = 0; i < values.size(); i++) {
-                    if (value == values[i][0]) {
+                    if (value == values[i]) {
                         keys[i].push_back(key);
                         break;
                     }
-                    else if (value < values[i][0]) {
+                    else if (value < values[i]) {
                         values.insert(values.begin() + i, vector<string>{value});
                         keys.insert(keys.begin() + i, vector<string>{key});
                         break;
@@ -62,6 +64,28 @@ namespace EasySQL {
                 values.push_back(vector<string>{value});
                 keys.push_back(vector<string>{key});
             }
+        }
+
+        // Delete from leaf node
+        bool delete_from_leaf(const vector<string>& value, const string& key) {
+            for (int i = 0; i < values.size(); i++) {
+
+                if (values[i] == value) { // Compare entire vectors
+
+                    for (int j = 0; j < keys[i].size(); j++) {
+                        if (keys[i][j] == key) {
+                            keys[i].erase(keys[i].begin() + j);
+                            // If no more keys for this value, remove the value entirely
+                            if (keys[i].empty()) {
+                                values.erase(values.begin() + i);
+                                keys.erase(keys.begin() + i);
+                            }
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
         }
     };
 
@@ -84,9 +108,11 @@ namespace EasySQL {
         }
 
         // insert operation
-        void insert(vector<string> value, string key) {
-            Node* old_node = search(value[0]);
-            old_node->insert_at_leaf(old_node, value[0], key);
+        void insert(const vector<string>& value) {
+
+			string key = value[0];
+            Node* old_node = search(value);
+            old_node->insert_at_leaf(old_node, value, key);
             if (old_node->values.size() == old_node->order) {
                 Node* node1 = new Node(old_node->order);
                 node1->check_leaf = true;
@@ -102,16 +128,182 @@ namespace EasySQL {
             }
         }
 
+        // outward facing delete handle
+        bool delete_entry(vector<string> value) {
+
+            string key = value[0];
+			//value.erase(value.begin()); // remove key from value vector for searching
+
+            Node* leaf = search(value);
+
+            // key not found
+            if (!leaf->delete_from_leaf(value, key)) {
+                return false; 
+            }
+
+            // check for rebalancing
+            int min_keys = ceil(degree / 2.0) - 1;
+            if (leaf == root) {
+                // root can have fewer keys
+                if (leaf->values.empty() && !leaf->children.empty()) {
+                    root = leaf->children[0];
+                    root->parent = nullptr;
+                    delete leaf;
+                }
+                return true;
+            }
+
+            if (leaf->values.size() >= min_keys) {
+                return true; // no underflow
+            }
+
+            // Handle underflow
+            handle_underflow(leaf);
+            return true;
+        }
+
+        // handle underflow in a node
+        void handle_underflow(Node* node) {
+            Node* parent = node->parent;
+            if (parent == nullptr) return; // root
+
+            int node_index = -1;
+            for (int i = 0; i < parent->children.size(); i++) {
+                if (parent->children[i] == node) {
+                    node_index = i;
+                    break;
+                }
+            }
+
+            int min_keys = ceil(degree / 2.0) - 1;
+
+            // Try to borrow from left sibling
+            if (node_index > 0) {
+                Node* left_sibling = parent->children[node_index - 1];
+                if (left_sibling->values.size() > min_keys) {
+                    borrow_from_left(node, left_sibling, parent, node_index);
+                    return;
+                }
+            }
+
+            // try to borrow from right sibling
+            if (node_index < parent->children.size() - 1) {
+                Node* right_sibling = parent->children[node_index + 1];
+                if (right_sibling->values.size() > min_keys) {
+                    borrow_from_right(node, right_sibling, parent, node_index);
+                    return;
+                }
+            }
+
+            // merge with sibling
+            if (node_index > 0) {
+                Node* left_sibling = parent->children[node_index - 1];
+                merge_nodes(left_sibling, node, parent, node_index - 1);
+            }
+            else {
+                Node* right_sibling = parent->children[node_index + 1];
+                merge_nodes(node, right_sibling, parent, node_index);
+            }
+        }
+
+        // Borrow from left sibling
+        void borrow_from_left(Node* node, Node* left_sibling, Node* parent, int node_index) {
+            if (node->check_leaf) {
+                // Move the last value from left sibling to beginning of node
+                node->values.insert(node->values.begin(), left_sibling->values.back());
+                node->keys.insert(node->keys.begin(), left_sibling->keys.back());
+                left_sibling->values.pop_back();
+                left_sibling->keys.pop_back();
+
+                // update parent key
+                parent->values[node_index - 1][0] = node->values[0][0];
+            }
+            else {
+                // For internal nodes
+                node->values.insert(node->values.begin(), parent->values[node_index - 1]);
+                parent->values[node_index - 1] = left_sibling->values.back();
+                left_sibling->values.pop_back();
+
+                node->children.insert(node->children.begin(), left_sibling->children.back());
+                left_sibling->children.pop_back();
+                node->children[0]->parent = node;
+            }
+        }
+
+        // Borrow from right sibling
+        void borrow_from_right(Node* node, Node* right_sibling, Node* parent, int node_index) {
+            if (node->check_leaf) {
+                // Move the first value from right sibling to end of node
+                node->values.push_back(right_sibling->values[0]);
+                node->keys.push_back(right_sibling->keys[0]);
+                right_sibling->values.erase(right_sibling->values.begin());
+                right_sibling->keys.erase(right_sibling->keys.begin());
+
+                // Update parent key
+                parent->values[node_index][0] = right_sibling->values[0][0];
+            }
+            else {
+                // For internal nodes
+                node->values.push_back(parent->values[node_index]);
+                parent->values[node_index] = right_sibling->values[0];
+                right_sibling->values.erase(right_sibling->values.begin());
+
+                node->children.push_back(right_sibling->children[0]);
+                right_sibling->children.erase(right_sibling->children.begin());
+                node->children.back()->parent = node;
+            }
+        }
+
+        // Merge two nodes
+        void merge_nodes(Node* left_node, Node* right_node, Node* parent, int index) {
+            if (left_node->check_leaf) {
+                // Merge leaf nodes
+                left_node->values.insert(left_node->values.end(), right_node->values.begin(), right_node->values.end());
+                left_node->keys.insert(left_node->keys.end(), right_node->keys.begin(), right_node->keys.end());
+                left_node->nextKey = right_node->nextKey;
+            }
+            else {
+                // Merge internal nodes
+                left_node->values.push_back(parent->values[index]);
+                left_node->values.insert(left_node->values.end(), right_node->values.begin(), right_node->values.end());
+                left_node->children.insert(left_node->children.end(), right_node->children.begin(), right_node->children.end());
+
+                // Update parent pointers
+                for (Node* child : right_node->children) {
+                    child->parent = left_node;
+                }
+            }
+
+            // Remove the separator key from parent
+            parent->values.erase(parent->values.begin() + index);
+            parent->children.erase(parent->children.begin() + index + 1);
+
+            delete right_node;
+
+            // Check if parent needs rebalancing
+            int min_keys = ceil(degree / 2.0) - 1;
+            if (parent == root) {
+                if (parent->values.empty()) {
+                    root = left_node;
+                    root->parent = nullptr;
+                    delete parent;
+                }
+            }
+            else if (parent->values.size() < min_keys) {
+                handle_underflow(parent);
+            }
+        }
+
         // search operation for different operations
-        Node* search(string value) {
+        Node* search(vector<string> value) {
             Node* current_node = root;
             while (!current_node->check_leaf) {
                 for (int i = 0; i < current_node->values.size(); i++) {
-                    if (value == current_node->values[i][0]) {
+                    if (value == current_node->values[i]) {
                         current_node = current_node->children[i + 1];
                         break;
                     }
-                    else if (value < current_node->values[i][0]) {
+                    else if (value < current_node->values[i]) {
                         current_node = current_node->children[i];
                         break;
                     }
@@ -125,10 +317,13 @@ namespace EasySQL {
         }
 
         // find the node
-        bool find(string value, string key) {
+        bool find(vector<string> value) {
+
+			string key = value[0];
+
             Node* l = search(value);
             for (int i = 0; i < l->values.size(); i++) {
-                if (!l->values[i].empty() && l->values[i][0] == value) {
+                if (!l->values[i].empty() && l->values[i] == value) {
                     for (int j = 0; j < l->keys[i].size(); j++) {
                         if (l->keys[i][j] == key) {
                             return true;
@@ -178,7 +373,9 @@ namespace EasySQL {
         void printTree(Node* node) {
             if (node == nullptr) return;
             for (int i = 0; i < node->values.size(); i++) {
-                cout << node->values[i][0] << " ";
+                for (int a = 0; a < node->values[i].size(); a++) {
+                    sendMessage(node->values[i][a]);
+                }
             }
             cout << endl;
             if (!node->check_leaf) {

@@ -131,7 +131,7 @@ namespace EasySQL {
 
 						// if type is valid it escapes to here.
 
-						trees[i].insert(values, values[0]); // Assuming the second parameter is a placeholder or not used
+						trees[i].insert(values); // Assuming the second parameter is a placeholder or not used
 
 						sendMessage("Inserted into table '" + tableName + "'.");
 						return true;
@@ -152,9 +152,49 @@ namespace EasySQL {
 		}
     }
 
+	// Look for key -> value 1 -> value 2 -> etc
+	bool c_find(vector<string> args) {
+		try {
+			for (int i = 0; i < trees.size(); i++) {
+				if (trees[i].name == args[0]) {
+					//if(args.size <)
+				}
+			}
+
+			// last escape
+			sendMessage("Table '" + args[0] + "' does not exist.");
+			return true;
+		}
+		catch (...) {
+			return false;
+		}
+	}
+
 	bool c_delete(vector<string> args) {
-				try {
-			// TODO
+		try {
+			for (int i = 0; i < trees.size(); i++) {
+				if (trees[i].name == args[0]) {
+					string title = args[0];
+					vector<string> newArgs = args; // erase table name from args
+
+
+					newArgs.erase(newArgs.begin());
+
+					string result = "";
+					for (int a = 0; a < newArgs.size(); a++) {
+						result += newArgs[a] + " ";
+					}
+
+					if (trees[i].delete_entry(newArgs)) {
+						sendMessage("Deleted ' " + result + "' from '" + title + "'.");
+						return true;
+					}
+
+
+					sendMessage("Could not find row ' " + result + "'.");
+					return true;
+				}
+			}
 			return true;
 		}
 		catch (...) {

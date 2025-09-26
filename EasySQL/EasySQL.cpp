@@ -35,8 +35,7 @@ namespace EasySQL {
 }
 
 /*TODO 
-data types need to be enforced.
-commands create, find, findrange, insert, delete, delete range need to be added.
+commands find, findrange, delete, delete range need to be added.
 */
 
 
@@ -47,22 +46,8 @@ int main()
     commands.push_back(Command("help", {}, false, "A list of available commands."));
     commands.push_back(Command("CREATE", { "TABLE" }, true, "Create containers (e.g. Database, Table)"));
     commands.push_back(Command("INSERT", { "TABLE" }, true, "Insert elements into containers (e.g. Database, Table)"));
+	commands.push_back(Command("DELETE", { "TABLE" }, true, "Delete elements from containers (e.g. Database, Table)"));
     commands.push_back(Command("FIND", {}, false, "Find a value from a table."));
-
-    /*
-    int record_len = 3;
-    BplusTree bplustree("test", record_len);
-    bplustree.insert("bart", "33");
-    bplustree.insert("test", "21");
-    bplustree.insert("meow", "31");
-    bplustree.printTree(bplustree.root);
-    if (bplustree.find("bart", "33")) {
-        cout << "Found" << endl;
-    }
-    else {
-        cout << "Not found" << endl;
-    }
-    */
     
 
     while (true) {
