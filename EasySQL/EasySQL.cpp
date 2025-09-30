@@ -5,20 +5,20 @@
 #include "CMDHandler.hpp"
 #include "BPT_Table.hpp"
 
-using namespace EasySQL;
+using namespace EasyTables;
 
 using namespace std;
 
-namespace EasySQL {
+namespace EasyTables {
 
-    /*
-	Commands created in main(), invoked in cmdExe(), defined in Commands.hpp
-    */
+    // Handles to commands.
     vector<Command> commands = {};
 
-	// this will be changed later but this is how all tables are stored for now.
+	// This will be removed later.
+	// Handles to all tables.
     vector<BplusTree> trees = {};
 
+    // Tokenize string pased on delimiter.
     vector<string> tokenize(const string& input, char delimiter = ' ') {
         vector<string> tokens;
         string token;
@@ -34,22 +34,22 @@ namespace EasySQL {
     }
 }
 
-/*TODO 
-commands find, findrange, delete, delete range need to be added.
-*/
-
 
 int main()
 {
-	// name, subcommands, hasArgs, description
-    commands.push_back(Command("debug", {}, false, "Prints information.")); // commented out in real release
-    commands.push_back(Command("help", {}, false, "A list of available commands."));
-    commands.push_back(Command("CREATE", { "TABLE" }, true, "Create containers (e.g. Database, Table)"));
-    commands.push_back(Command("INSERT", { "TABLE" }, true, "Insert elements into containers (e.g. Database, Table)"));
-	commands.push_back(Command("DELETE", { "TABLE" }, true, "Delete elements from containers (e.g. Database, Table)"));
-    commands.push_back(Command("GET", { "TABLE" }, true, "Get a value from a table."));
-    
 
+    /*
+	REGISTER COMMNADS HERE
+    */
+    //commands.push_back(Command("debug", {}, false, "Prints information.")); // commented out in real release
+    commands.push_back(Command("help", {}, false, "A list of available commands."));
+    commands.push_back(Command("CREATE", { "TABLE" }, true, "Create Tables."));
+    commands.push_back(Command("INSERT", { "TABLE" }, true, "Insert elements into Tables."));
+	commands.push_back(Command("DELETE", { "TABLE" }, true, "Delete elements from Tables."));
+    commands.push_back(Command("GET", { "TABLE" }, true, "Get a value from a Table."));
+    commands.push_back(Command("DROP", { "TABLE" }, true, "Delete a Table."));
+    
+    // Console loop.
     while (true) {
         string x = "";
         getline(cin, x);

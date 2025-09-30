@@ -6,31 +6,33 @@
 #include <string>
 using namespace std;
 
-namespace EasySQL {
+namespace EasyTables {
 
-    // types default to strings. NA is usually used for errors.
+    // Types default to strings. NA is usually used for errors.
     enum NType {
         INT, // int64_t
-		DBL, // double
-		STR, // string
-		BOOL, // boolean
-		NA // Not Available, Unknown type, Error
+        DBL, // double
+        STR, // string
+        BOOL, // boolean
+        NA // Not Available, Unknown type, Error
     };
 
+    // Clean these up later.
     extern NType strToNType(const string& typeStr);
-	extern string nTypeToStr(const NType& type);
+    extern string nTypeToStr(const NType& type);
     extern bool isValidType(const string& str, const NType& type);
-	extern NType whatType(const string& str);
+    extern NType whatType(const string& str);
 
-    // node creation
     class Node {
     public:
         int order;
 
-        // each value index is a row of data.
-        vector<vector<string>> values;
-        vector<Node*> children; // for internal nodes
-        vector<vector<string>> keys; // for leaf nodes
+        
+        vector<vector<string>> values;// Each value index is a Row of values.
+
+        vector<Node*> children; // For value nodes.
+
+        vector<vector<string>> keys; // For leaf nodes.
         Node* nextKey;
         Node* parent;
         bool check_leaf;
@@ -41,7 +43,10 @@ namespace EasySQL {
             this->check_leaf = false;
         }
 
-        // Fix for insert_at_leaf: use vector<string>{value} instead of value
+        /*
+        Most code from here down is almost always changing. This will be annotated on a more stable verison.
+        */
+
         void insert_at_leaf(Node* leaf, vector<string> value, string key) {
             if (!values.empty()) {
                 for (int i = 0; i < values.size(); i++) {

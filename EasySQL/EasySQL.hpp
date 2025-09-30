@@ -5,7 +5,7 @@
 #include "CMDHandler.hpp"
 #include "BPT_Table.hpp"
 
-namespace EasySQL {
+namespace EasyTables {
 	extern vector<Command> commands;
 	extern vector<BplusTree> trees;
 }

@@ -2,8 +2,9 @@
 #include "EasySQL.hpp"
 #include "BPT_Table.hpp"
 
-namespace EasySQL {
+namespace EasyTables {
 
+	// Convert string to NType enum for easier comparison.
 	NType strToNType(const string& typeStr) {
 		if (typeStr == "INT") return INT;
 		else if (typeStr == "DBL") return DBL;
@@ -12,6 +13,7 @@ namespace EasySQL {
 		else return NA;
 	};
 
+	// Convert NType enum to string for messages or in some cases storage.
 	string nTypeToStr(const NType& type) {
 		switch (type) {
 		case INT: return "INT";
@@ -22,12 +24,13 @@ namespace EasySQL {
 		}
 	};
 
-	// type enforcement.
+	// Check if a string represents a valid NType. Usually used in commands.
 	bool isValidType(const string& str, const NType& type)
 	{
 		if (strToNType(str) == type) return true; else return false;
 	};
 
+	// Determine the NType of a given string value. Used for type enforcement.
 	NType whatType(const string& str) {
 		if (str == "TRUE" || str == "FALSE") {
 			return BOOL;
@@ -50,6 +53,7 @@ namespace EasySQL {
 		}
 	};
 
+	// Prints all information about available commands.
 	bool c_help()
 	{
 		try {
@@ -77,6 +81,7 @@ namespace EasySQL {
 		}
 	}
 
+	// Create a new table with a name and column types.
 	bool c_create(vector<string> args) {
 		try {
 			if (args.size() > 2) {
@@ -108,8 +113,8 @@ namespace EasySQL {
 		}
 	}
 
-	// Table needs to have type enforcement. (this currently doesnt exist)
-    bool c_insert(vector<string> args) {
+	// Insert row into table.
+	bool c_insert(vector<string> args) {
 		try {
 			if (args.size() > 1) {
 				string tableName = args[0];
@@ -121,10 +126,9 @@ namespace EasySQL {
 						vector<string> values(args.begin() + 1, args.end());
 
 						// Type enforcement check
-						// check equates to type not is type
 						for (int a = 0; a < values.size(); a++) {
 							if (whatType(values[a]) != trees[i].types[a]) {
-								sendMessage("Entered type does not match Table Column. '" + values[a] + "' is type : " + nTypeToStr(whatType(values[a])));
+								sendMessage("Cannot INSERT Row into Table because '" + values[a] + "' is type '" + nTypeToStr(whatType(values[a])) + "' but Column Type is '" + nTypeToStr(trees[i].types[a]) + "'.");
 								return true;
 							}
 						}
@@ -137,27 +141,28 @@ namespace EasySQL {
 						return true;
 					}
 				}
-							
+
 				// table name escape
 				sendMessage("Table '" + tableName + "' does not exist. Use 'CREATE TABLE " + tableName + " <column types>' to create it.");
 				return true;
 			}
 			else {
-				sendMessage("'INSERT TABLE' requires at least 2 arguments, a Table Name, a Value (e.g. INSERT TABLE goodTable 123).");
+				sendMessage("'INSERT TABLE' requires at least 2 arguments, a Table Name, and Values (e.g. INSERT TABLE goodTable 1 2.3 FALSE hello).");
 				return true;
 			}
 		}
 		catch (...) {
 			return false;
 		}
-    }
+	}
 
+	// Delete row from table. Requres full row match.
 	bool c_delete(vector<string> args) {
 		try {
 			for (int i = 0; i < trees.size(); i++) {
 				if (trees[i].name == args[0]) {
 					string title = args[0];
-					vector<string> newArgs = args; // erase table name from args
+					vector<string> newArgs = args;
 
 					newArgs.erase(newArgs.begin());
 
@@ -182,7 +187,7 @@ namespace EasySQL {
 		}
 	}
 
-	// gets value by key
+	// Get row by key from table.
 	bool c_get(vector<string> args) {
 		try {
 			for (int i = 0; i < trees.size(); i++) {
@@ -213,29 +218,21 @@ namespace EasySQL {
 		}
 	}
 
-	/*
-	bool c_debug() {
+	// Permanently delete table.
+	bool c_drop(vector<string> args) {
 		try {
-			string result = "List of trees :";
-			if (trees.size() > 0) {
-				for (int i = 0; i < trees.size(); i++) {
-					result += "\n - " + trees[i].name + " | ";
-					for (int a = 0; a < trees[i].types.size(); a++) {
-						result += nTypeToStr(trees[i].types[a]) + " ";
-					}
+			for (int i = 0; i < trees.size(); i++) {
+				if (trees[i].name == args[0]) {
+					trees.erase(trees.begin() + i);
+					sendMessage("Dropped table '" + args[0] + "'.");
+					return true;
 				}
-
-				sendMessage(result);
-
-				trees[0].printTree(trees[0].root);
 			}
-			else {
-				sendMessage("No trees currently exist.");
-			}
+			sendMessage("Table '" + args[0] + "' does not exist.");
+			return true;
 		}
 		catch (...) {
 			return false;
 		}
 	}
-	*/
 }
