@@ -1,7 +1,7 @@
 ﻿// MAIN
 #include <sstream>
 
-#include "EasySQL.hpp"
+#include "EasyDB.hpp"
 #include "CMDHandler.hpp"
 #include "BPT_Table.hpp"
 

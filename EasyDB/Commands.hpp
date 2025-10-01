@@ -1,5 +1,5 @@
 #pragma once
-#include "EasySQL.hpp"
+#include "EasyDB.hpp"
 #include "BPT_Table.hpp"
 
 namespace EasyTables {
